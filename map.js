@@ -87,7 +87,7 @@ function clearMarkers() {
   markers = [];
 }
 
-// ✅ 제설함 마커 표시 + 마커 클릭 시 해당 위치로 이동/줌인 + 네비 링크
+// 제설함 마커 표시 + 마커 클릭 시 해당 위치로 이동/줌인 + 네비 링크
 function renderMarkers(data) {
   clearMarkers();
   const countEl = document.getElementById("count");
@@ -129,21 +129,23 @@ function renderMarkers(data) {
     `;
     const infowindow = new kakao.maps.InfoWindow({ content: infoHtml });
 
-    // 🔵 마커 클릭 → 해당 위치로 부드럽게 이동 + 고정 확대(레벨 5) + 말풍선
+    // 마커 클릭 → 해당 위치로 이동 + 고정 확대(레벨 5) + 말풍선
     kakao.maps.event.addListener(marker, "click", () => {
       map.panTo(pos);
-      map.setLevel(5); // 항상 5레벨로 맞춤 (과하지 않게 고정)
+      map.setLevel(5); // 항상 5레벨로 맞춤
       infowindow.open(map, marker);
     });
   });
 
-  // 기본적으로는 현재 필터된 제설함들이 한 번에 보이도록
+  // 현재 필터된 제설함들이 한 번에 보이도록
   map.setBounds(bounds);
 }
 
 function initFilters() {
   const citySelect = document.getElementById("citySelect");
   const dongSelect = document.getElementById("dongSelect");
+  const dongSearchInput = document.getElementById("dongSearchInput");
+  const dongSearchBtn = document.getElementById("dongSearchBtn");
 
   if (!parsedBoxes.length) {
     console.warn("parsedBoxes가 비어있습니다.");
@@ -182,14 +184,24 @@ function initFilters() {
     });
   }
 
-  // 3) 선택값에 따라 필터 적용
+  // 3) 선택값 + 검색어에 따라 필터 적용
   function applyFilter() {
     const city = citySelect.value;
     const dong = dongSelect.value;
+    const searchRaw = dongSearchInput ? dongSearchInput.value.trim() : "";
+    const search = searchRaw.replace(/\s+/g, ""); // 공백 제거
 
     let list = parsedBoxes;
+
     if (city) list = list.filter((b) => b.sigunNm === city);
     if (dong) list = list.filter((b) => b.dong === dong);
+    if (search) {
+      list = list.filter(
+        (b) =>
+          b.dong &&
+          b.dong.replace(/\s+/g, "").includes(search)
+      );
+    }
 
     currentList = list; // 현재 표시 목록 저장
     renderMarkers(list);
@@ -201,6 +213,15 @@ function initFilters() {
   });
 
   dongSelect.addEventListener("change", applyFilter);
+
+  if (dongSearchBtn && dongSearchInput) {
+    dongSearchBtn.addEventListener("click", applyFilter);
+    dongSearchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        applyFilter();
+      }
+    });
+  }
 
   // 초기 상태: 전체
   updateDongOptions();
@@ -228,16 +249,31 @@ function getDistanceKm(lat1, lng1, lat2, lng2) {
 // "내 위치에서 가장 가까운 제설함" 버튼 기능
 function initNearestButton() {
   const btn = document.getElementById("nearestBtn");
+  const hint = document.getElementById("hintNearest");
   if (!btn) return;
 
   btn.addEventListener("click", () => {
+    if (hint) {
+      hint.innerHTML =
+        "내 위치를 확인하는 중입니다.<br/>" +
+        "브라우저(또는 앱)의 위치 권한을 허용해 주세요.";
+    }
+
     if (!map) {
-      alert("지도가 아직 준비되지 않았습니다. 새로고침 후 다시 시도해 주세요.");
+      if (hint) {
+        hint.innerHTML =
+          "지도가 아직 준비되지 않았습니다.<br/>" +
+          "페이지를 새로고침한 후 다시 이용해 주세요.";
+      }
       return;
     }
 
     if (!navigator.geolocation) {
-      alert("이 브라우저에서는 위치 정보를 사용할 수 없습니다.");
+      if (hint) {
+        hint.innerHTML =
+          "이 브라우저에서는 위치 정보를 사용할 수 없습니다.<br/>" +
+          "다른 브라우저 또는 기기에서 이용해 주세요.";
+      }
       return;
     }
 
@@ -250,7 +286,11 @@ function initNearestButton() {
         const targetList = currentList.length ? currentList : parsedBoxes;
 
         if (!targetList.length) {
-          alert("제설함 데이터가 없습니다.");
+          if (hint) {
+            hint.innerHTML =
+              "제설함 데이터가 없습니다.<br/>" +
+              "시/군과 동(읍/면) 선택을 다시 확인해 주세요.";
+          }
           return;
         }
 
@@ -267,7 +307,11 @@ function initNearestButton() {
         });
 
         if (!nearest) {
-          alert("근처 제설함을 찾지 못했습니다.");
+          if (hint) {
+            hint.innerHTML =
+              "근처 제설함을 찾지 못했습니다.<br/>" +
+              "잠시 후 버튼을 한 번 더 눌러 주세요.";
+          }
           return;
         }
 
@@ -283,7 +327,11 @@ function initNearestButton() {
             ${nearest.sigunNm} ${nearest.gu ? nearest.gu + " " : ""}${nearest.dong}<br/>
             ${nearest.addr}<br/>
             거리: 약 ${minDist.toFixed(2)} km<br/>
-            ${nearest.manager ? `관리기관: ${nearest.manager}` : ""}
+            ${nearest.manager ? `관리기관: ${nearest.manager}<br/>` : ""}
+            <span style="display:block;margin-top:4px;color:#9ca3af;font-size:11px;">
+              ※ GPS 수신 상태에 따라 한 번에 정확히 잡히지 않을 수 있습니다.<br/>
+              위치가 다르게 보이면 잠시 후 버튼을 한 번 더 눌러 주세요.
+            </span>
           </div>
         `;
         const infowindow = new kakao.maps.InfoWindow({
@@ -291,10 +339,21 @@ function initNearestButton() {
           content: infoHtml
         });
         infowindow.open(map);
+
+        if (hint) {
+          hint.innerHTML =
+            "내 위치 기준으로 가장 가까운 제설함을 표시했습니다.<br/>" +
+            "위치가 부정확해 보이면 잠시 후 버튼을 한 번 더 눌러 주세요.";
+        }
       },
       (err) => {
         console.error(err);
-        alert("위치 정보를 가져오지 못했습니다. 위치 권한을 허용했는지 확인해 주세요.");
+        if (hint) {
+          hint.innerHTML =
+            "내 위치를 불러오지 못했습니다.<br/>" +
+            "위치 권한을 허용했는지 확인하신 후,<br/>" +
+            "잠시 후 버튼을 한 번 더 눌러 주세요.";
+        }
       }
     );
   });

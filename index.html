@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>경기도 제설함 위치 지도</title>
-  <!-- ✅ 모바일 화면 비율 맞추기 -->
+  <!-- 모바일 대응 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -13,13 +13,13 @@
       background: #f3f4f6;
     }
 
-    /* 필터 패널 공통 스타일 */
+    /* 왼쪽 상단 컨트롤 박스 */
     #controls {
       position: absolute;
       z-index: 10;
       top: 16px;
       left: 16px;
-      width: 280px;
+      width: 300px;
       background: #ffffff;
       padding: 16px 18px;
       border-radius: 14px;
@@ -44,7 +44,7 @@
     .form-row {
       display: flex;
       flex-direction: column;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .form-row label {
@@ -70,7 +70,60 @@
       background: #ffffff;
     }
 
-    /* "내 위치에서 가장 가까운 제설함" 버튼 */
+    /* 동 검색창: 인풋 + 버튼 한 줄 */
+    .search-inline {
+      display: flex;
+      gap: 6px;
+    }
+
+    .search-inline input {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 13px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .search-inline input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+      background: #ffffff;
+    }
+
+    .search-inline button {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: none;
+      background: #6b7280;
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+    }
+
+    .search-inline button:hover {
+      background: #4b5563;
+      box-shadow: 0 4px 12px rgba(75, 85, 99, 0.35);
+    }
+
+    .search-inline button:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 8px rgba(75, 85, 99, 0.25);
+    }
+
+    .search-help {
+      margin-top: 3px;
+      font-size: 11px;
+      color: #9ca3af;
+      line-height: 1.4;
+    }
+
+    /* 내 위치 버튼 */
     #nearestBtn {
       padding: 8px 10px;
       font-size: 12px;
@@ -96,25 +149,32 @@
       box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
     }
 
+    #hintNearest {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #9ca3af;
+      line-height: 1.4;
+    }
+
     #count {
       margin-top: 6px;
       font-size: 12px;
       color: #6b7280;
     }
 
-    /* 지도 전체 영역 */
+    /* 지도 영역 */
     #map {
       width: 100vw;
       height: 100vh;
     }
 
-    /* ✅ 모바일(좁은 화면) 전용 스타일 */
+    /* 모바일 반응형 */
     @media (max-width: 768px) {
       #controls {
         top: 10px;
         left: 50%;
         transform: translateX(-50%);
-        width: calc(100% - 24px); /* 좌우 12px 여백 */
+        width: calc(100% - 24px);
         padding: 12px 14px;
         border-radius: 12px;
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
@@ -137,9 +197,23 @@
         padding: 6px 8px;
       }
 
+      .search-inline input {
+        font-size: 12px;
+        padding: 6px 8px;
+      }
+
+      .search-inline button {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+
       #nearestBtn {
         font-size: 11px;
         padding: 7px 8px;
+      }
+
+      #hintNearest {
+        font-size: 10px;
       }
 
       #count {
@@ -147,7 +221,6 @@
       }
     }
 
-    /* ✅ 아주 낮은 높이(작은 휴대폰)에서 패널 넘치지 않게 */
     @media (max-height: 540px) {
       #controls {
         max-height: 45vh;
@@ -156,7 +229,8 @@
     }
   </style>
 
-  <!-- 🔴 여기 네 카카오 JavaScript 키 넣기 -->
+  <!-- 🔴 여기에 네 카카오 JavaScript 키 입력 -->
+  <!-- 예: appkey=1234567890abcdef1234567890abcdef -->
   <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=0bd150202ffa54c35464379b8b006f85"></script>
 
   <script src="snowBoxes.js"></script>
@@ -166,7 +240,7 @@
   <div id="controls">
     <h1>경기도 제설함 위치</h1>
     <p class="subtitle">
-      시/군과 동(읍/면)을 선택하면<br />
+      시/군과 동(읍/면)을 선택하거나 검색하면<br />
       해당 지역 제설함 위치가 지도에 표시됩니다.
     </p>
 
@@ -184,8 +258,27 @@
       </select>
     </div>
 
-    <div class="form-row" style="margin-top: 6px;">
+    <div class="form-row">
+      <label for="dongSearchInput">동 이름 검색</label>
+      <div class="search-inline">
+        <input
+          id="dongSearchInput"
+          type="text"
+          placeholder="예: 율전동, 삼동 (일부만 입력해도 됩니다)"
+        />
+        <button id="dongSearchBtn" type="button">검색</button>
+      </div>
+      <div class="search-help">
+        시/군을 먼저 선택한 뒤, 동 이름 일부를 입력하고 검색을 누르면 해당 동만 표시됩니다.
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top: 4px;">
       <button id="nearestBtn" type="button">내 위치에서 가장 가까운 제설함 찾기</button>
+      <p id="hintNearest">
+        ※ GPS 수신 상태에 따라 한 번에 정확히 위치가 잡히지 않을 수 있습니다.<br />
+        지도가 움직이지 않으면 버튼을 한 번 더 눌러주세요.
+      </p>
     </div>
 
     <div id="count">표시 제설함: 0개</div>
