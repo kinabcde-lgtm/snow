@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>경기도 제설함 위치 지도</title>
+  <!-- ✅ 모바일 화면 비율 맞추기 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f3f4f6;
+    }
+
+    /* 필터 패널 공통 스타일 */
+    #controls {
+      position: absolute;
+      z-index: 10;
+      top: 16px;
+      left: 16px;
+      width: 280px;
+      background: #ffffff;
+      padding: 16px 18px;
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+      border: 1px solid #e5e7eb;
+    }
+
+    #controls h1 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    #controls .subtitle {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 8px;
+    }
+
+    .form-row label {
+      font-size: 12px;
+      color: #4b5563;
+      margin-bottom: 4px;
+    }
+
+    #controls select {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 13px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    #controls select:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+      background: #ffffff;
+    }
+
+    /* "내 위치에서 가장 가까운 제설함" 버튼 */
+    #nearestBtn {
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: none;
+      background: #2563eb;
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+      width: 100%;
+      text-align: center;
+    }
+
+    #nearestBtn:hover {
+      background: #1d4ed8;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+    }
+
+    #nearestBtn:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+    }
+
+    #count {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    /* 지도 전체 영역 */
+    #map {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ✅ 모바일(좁은 화면) 전용 스타일 */
+    @media (max-width: 768px) {
+      #controls {
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 24px); /* 좌우 12px 여백 */
+        padding: 12px 14px;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+      }
+
+      #controls h1 {
+        font-size: 16px;
+      }
+
+      #controls .subtitle {
+        font-size: 11px;
+      }
+
+      .form-row label {
+        font-size: 11px;
+      }
+
+      #controls select {
+        font-size: 12px;
+        padding: 6px 8px;
+      }
+
+      #nearestBtn {
+        font-size: 11px;
+        padding: 7px 8px;
+      }
+
+      #count {
+        font-size: 11px;
+      }
+    }
+
+    /* ✅ 아주 낮은 높이(작은 휴대폰)에서 패널 넘치지 않게 */
+    @media (max-height: 540px) {
+      #controls {
+        max-height: 45vh;
+        overflow-y: auto;
+      }
+    }
+  </style>
+
+  <!-- 🔴 여기 네 카카오 JavaScript 키 넣기 -->
+  <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=0bd150202ffa54c35464379b8b006f85"></script>
+
+  <script src="snowBoxes.js"></script>
+  <script src="map.js" defer></script>
+</head>
+<body>
+  <div id="controls">
+    <h1>경기도 제설함 위치</h1>
+    <p class="subtitle">
+      시/군과 동(읍/면)을 선택하면<br />
+      해당 지역 제설함 위치가 지도에 표시됩니다.
+    </p>
+
+    <div class="form-row">
+      <label for="citySelect">시/군 선택</label>
+      <select id="citySelect">
+        <option value="">전체</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="dongSelect">동(읍/면) 선택</label>
+      <select id="dongSelect">
+        <option value="">전체</option>
+      </select>
+    </div>
+
+    <div class="form-row" style="margin-top: 6px;">
+      <button id="nearestBtn" type="button">내 위치에서 가장 가까운 제설함 찾기</button>
+    </div>
+
+    <div id="count">표시 제설함: 0개</div>
+  </div>
+
+  <div id="map"></div>
+</body>
+</html>
