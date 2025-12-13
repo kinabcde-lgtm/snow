@@ -7,16 +7,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3230912468552501"
-     crossorigin="anonymous"></script>
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-format="autorelaxed"
-     data-ad-client="ca-pub-3230912468552501"
-     data-ad-slot="2750991611"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -35,6 +25,12 @@
       border-radius: 14px;
       box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
       border: 1px solid #e5e7eb;
+      box-sizing: border-box;
+    }
+
+    /* 패널 내용 전체(접기/펼치기 대상) */
+    #controlsContent {
+      width: 100%;
     }
 
     #controls h1 {
@@ -162,7 +158,7 @@
     #hintNearest {
       margin-top: 4px;
       font-size: 11px;
-      color: #9ca3af;
+      color: #ef4444; /* 빨간색 안내문구 */
       line-height: 1.4;
     }
 
@@ -170,6 +166,40 @@
       margin-top: 6px;
       font-size: 12px;
       color: #6b7280;
+    }
+
+    /* 접기/펼치기 버튼 */
+    #collapseToggle {
+      margin-top: 10px;
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #f3f4f6;
+      color: #374151;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+    }
+
+    #collapseToggle:hover {
+      background: #e5e7eb;
+      box-shadow: 0 3px 10px rgba(148, 163, 184, 0.4);
+    }
+
+    #collapseToggle:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 6px rgba(148, 163, 184, 0.3);
+    }
+
+    /* 접힌 상태 스타일 */
+    #controls.collapsed {
+      padding: 10px 12px;
+    }
+
+    #controls.collapsed #controlsContent {
+      display: none;
     }
 
     /* 지도 영역 */
@@ -229,6 +259,10 @@
       #count {
         font-size: 11px;
       }
+
+      #collapseToggle {
+        font-size: 11px;
+      }
     }
 
     @media (max-height: 540px) {
@@ -241,71 +275,80 @@
 
   <!-- 🔴 여기에 네 카카오 JavaScript 키 입력 -->
   <!-- 예: appkey=1234567890abcdef1234567890abcdef -->
-  <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=0bd150202ffa54c35464379b8b006f85"></script>
+  <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey="0bd150202ffa54c35464379b8b006f85"></script>
 
   <script src="snowBoxes.js"></script>
   <script src="map.js" defer></script>
 </head>
 <body>
   <div id="controls">
-    <h1>경기도 제설함 위치</h1>
-    <p class="subtitle">
-      시/군과 동(읍/면)을 선택하거나 검색하면<br />
-      해당 지역 제설함 위치가 지도에 표시됩니다.
-    </p>
-
-    <div class="form-row">
-      <label for="citySelect">시/군 선택</label>
-      <select id="citySelect">
-        <option value="">전체</option>
-      </select>
-    </div>
-
-    <div class="form-row">
-      <label for="dongSelect">동(읍/면) 선택</label>
-      <select id="dongSelect">
-        <option value="">전체</option>
-      </select>
-    </div>
-
-    <div class="form-row">
-      <label for="dongSearchInput">동 이름 검색</label>
-      <div class="search-inline">
-        <input
-          id="dongSearchInput"
-          type="text"
-          placeholder="예: 율전동, 삼동 (일부만 입력해도 됩니다)"
-        />
-        <button id="dongSearchBtn" type="button">검색</button>
-      </div>
-      <div class="search-help">
-        시/군을 먼저 선택한 뒤, 동 이름 일부를 입력하고 검색을 누르면 해당 동만 표시됩니다.
-      </div>
-    </div>
-
-    <div class="form-row" style="margin-top: 4px;">
-      <button id="nearestBtn" type="button">내 위치에서 가장 가까운 제설함 찾기</button>
-      <p id="hintNearest">
-        ※ GPS 수신 상태에 따라 한 번에 정확히 위치가 잡히지 않을 수 있습니다.<br />
-        지도가 움직이지 않으면 버튼을 한 번 더 눌러주세요.
+    <!-- ✅ 접기/펼치기 대상 전체를 이 div 안에 넣음 -->
+    <div id="controlsContent">
+      <h1>경기도 제설함 위치</h1>
+      <p class="subtitle">
+        시/군과 동(읍/면)을 선택하거나 검색하면<br />
+        해당 지역 제설함 위치가 지도에 표시됩니다.
       </p>
+
+      <div class="form-row">
+        <label for="citySelect">시/군 선택</label>
+        <select id="citySelect">
+          <option value="">전체</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="dongSelect">동(읍/면) 선택</label>
+        <select id="dongSelect">
+          <option value="">전체</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="dongSearchInput">동 이름 검색</label>
+        <div class="search-inline">
+          <input
+            id="dongSearchInput"
+            type="text"
+            placeholder="예: 율전동, 삼동 (일부만 입력해도 됩니다)"
+          />
+          <button id="dongSearchBtn" type="button">검색</button>
+        </div>
+        <div class="search-help">
+          시/군을 먼저 선택한 뒤, 동 이름 일부를 입력하고 검색을 누르면 해당 동만 표시됩니다.
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top: 4px;">
+        <button id="nearestBtn" type="button">내 위치에서 가장 가까운 제설함 찾기</button>
+        <p id="hintNearest">
+          ※ GPS 수신 상태에 따라 한 번에 정확히 위치가 잡히지 않을 수 있습니다.<br />
+          지도가 움직이지 않으면 버튼을 한 번 더 눌러주세요.
+        </p>
+      </div>
+
+      <div id="count">표시 제설함: 0개</div>
     </div>
 
-    <div id="count">표시 제설함: 0개</div>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3230912468552501"
-     crossorigin="anonymous"></script>
-<!-- 심플한 권장광고 -->
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-3230912468552501"
-     data-ad-slot="7092057344"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+    <!-- ✅ 아래쪽에 접기/펼치기 버튼 -->
+    <button id="collapseToggle" type="button">패널 접기 ▲</button>
   </div>
 
   <div id="map"></div>
+
+  <!-- ✅ 접기/펼치기 동작 스크립트 -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var controls = document.getElementById("controls");
+      var toggleBtn = document.getElementById("collapseToggle");
+      var collapsed = false;
+
+      toggleBtn.addEventListener("click", function () {
+        collapsed = !collapsed;
+        controls.classList.toggle("collapsed", collapsed);
+        toggleBtn.textContent = collapsed ? "패널 펼치기 ▼" : "패널 접기 ▲";
+      });
+    });
+  </script>
 </body>
 </html>
